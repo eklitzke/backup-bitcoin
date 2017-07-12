@@ -5,15 +5,8 @@ for [Bitcoin Core](https://bitcoin.org/en/download). It creates a backup of your
 `wallet.dat` file, GPG encrypts it, and then copies it to
 a [Google Cloud Storage](https://cloud.google.com/storage/) bucket.
 
-The script will work if Bitcoin Core is shut down, or if Bitcoin Core is running
-and accepting RPC commands (although see the usage note below for details). If
-you want to use the RPC interface, you should have something like the following
-in your `bitcoin.conf`:
-
-```ini
-rpcbind=127.0.0.1
-server=1
-```
+The script can operate both if Bitcoin Core is shut down, or if Bitcoin Core is
+running and accepting RPC commands. See the RPC usage note below for details.
 
 Run the script like this:
 
@@ -36,3 +29,10 @@ technically a rare race condition where the wallet file could be copied in a
 corrupted state. This would happen if the backup script is run exactly as a new
 transaction comes in on the wallet. Therefore if you are using `bitcoin-qt`, you
 are responsible for ensuring that you set `server=1` appropriately.
+
+These are the recommended `bitcoin.conf` settings for using the RPC interface:
+
+```ini
+rpcbind=127.0.0.1
+server=1
+```

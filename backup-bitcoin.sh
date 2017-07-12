@@ -15,20 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set -eu
+set -eux
 
 BUCKET=
+DATADIR="$HOME/.bitcoin/"
 GPGRECIPIENT=
 BACKUPFILE=
 BACKUPNAME=wallet.dat.gpg
 QUIET=0
 
 usage() {
-  echo "Usage: $0 [-q] -b BUCKET -u GPGRECIPIENT"
+  echo "Usage: $0 [-q] [-d DATADIR] -b BUCKET -u GPGRECIPIENT"
   exit
 }
 
-while getopts ":hqb:u:f:" opt; do
+while getopts ":hqb:d:u:f:" opt; do
   case $opt in
     h)
       usage
@@ -38,6 +39,9 @@ while getopts ":hqb:u:f:" opt; do
       ;;
     b)
       BUCKET="$OPTARG"
+      ;;
+    d)
+      DATADIR="$OPTARG"
       ;;
     u)
       GPGRECIPIENT="$OPTARG"
@@ -67,15 +71,21 @@ fi
 
 GPGBACKUP="${BACKUPFILE}.gpg"
 
+# Normalize the data directory name.
+DATADIR="${DATADIR%/}"
+
 # In normal operation this will be a no-op.
 cleanup() {
   rm -f "$BACKUPFILE" "$GPGBACKUP"
 }
 trap cleanup EXIT
 
-# Create a backup file. Note that this file will have permissions 600, so it is
-# OK if it is in /tmp.
-bitcoin-cli backupwallet "$BACKUPFILE"
+# If a .cookie file exists, we use RPC to back up the wallet.
+if [ -r "${DATADIR}/.cookie" ]; then
+  bitcoin-cli backupwallet "$BACKUPFILE"
+else
+  install -m 600 "${DATADIR}/wallet.dat" "$BACKUPFILE"
+fi
 
 # Encrypt the backup.
 test -f "$GPGBACKUP" && rm -f "$GPGBACKUP"

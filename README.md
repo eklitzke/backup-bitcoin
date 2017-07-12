@@ -5,8 +5,10 @@ for [Bitcoin Core](https://bitcoin.org/en/download). It creates a backup of your
 `wallet.dat` file, GPG encrypts it, and then copies it to
 a [Google Cloud Storage](https://cloud.google.com/storage/) bucket.
 
-Ensure that you have Bitcoin set up to allow RPC commands, e.g. by adding the
-following to your `bitcoin.conf`:
+Currently the script uses the `backupwallet` RPC command, so you need either
+`bitcoind` running, or `bitcoin-qt` running in server mode. Ensure that you have
+Bitcoin set up to allow RPC commands, e.g. by adding the following to your
+`bitcoin.conf`:
 
 ```ini
 rpcbind=127.0.0.1
@@ -16,7 +18,7 @@ server=1
 Then run the script like this:
 
 ```bash
-# Back up your wallet.dat to a Google Cloud Storage bucket.
+# GPG encrypt wallet.dat and copy it to the cloud.
 $ ./backup-bitcoin.sh -b gs://target-bucket/ -u gpg-recipient
 ```
 

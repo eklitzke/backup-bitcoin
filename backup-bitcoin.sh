@@ -64,14 +64,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Create a backup
+# Create a backup file.
 bitcoin-cli backupwallet "$BACKUPFILE"
 
-# Encrypt it
-rm -f "$GPGBACKUP"
+# Encrypt the backup.
+test -f "$GPGBACKUP" && rm -f "$GPGBACKUP"
 gpg -r "$GPGRECIPIENT" -e "$BACKUPFILE"
-chmod 600 "$GPGBACKUP"
-rm -f "$BACKUPFILE"
 
-# Copy to the cloud.
+# Move the backup to the cloud.
 gsutil -q mv "$GPGBACKUP" "$BUCKET"

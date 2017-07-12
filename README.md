@@ -16,5 +16,8 @@ server=1
 Then run the script like this:
 
 ```
-$ ./backup-bash.sh -b gs://change-this-bucket/ -u the-gpg-recipient
+$ ./backup-bash.sh -b gs://target-bucket/ -u gpg-recipient
 ```
+
+Typically you would set the GPG recipient to be yourself, since you want to be
+the only person who can decrypt the file.

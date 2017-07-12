@@ -15,22 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set -eux
+set -eu
 
 BUCKET=
 GPGRECIPIENT=
 BACKUPFILE=
 BACKUPNAME=wallet.dat.gpg
+QUIET=0
 
 usage() {
-  echo "Usage: $0 -b BUCKET -u GPGRECIPIENT"
+  echo "Usage: $0 [-q] -b BUCKET -u GPGRECIPIENT"
   exit
 }
 
-while getopts ":hb:u:f:" opt; do
+while getopts ":hqb:u:f:" opt; do
   case $opt in
     h)
       usage
+      ;;
+    q)
+      QUIET=1
       ;;
     b)
       BUCKET="$OPTARG"
@@ -77,5 +81,12 @@ bitcoin-cli backupwallet "$BACKUPFILE"
 test -f "$GPGBACKUP" && rm -f "$GPGBACKUP"
 gpg -r "$GPGRECIPIENT" -e "$BACKUPFILE"
 
+GSLOCATION="${BUCKET%/}"/"${BACKUPNAME}"
+
 # Move the backup to the cloud.
-gsutil -q mv "$GPGBACKUP" "${BUCKET%/}"/"${BACKUPNAME}"
+gsutil -q mv "$GPGBACKUP" "$GSLOCATION"
+
+# Echo where the file was saved to.
+if [ "$QUIET" -eq 0 ]; then
+  echo "$GSLOCATION"
+fi

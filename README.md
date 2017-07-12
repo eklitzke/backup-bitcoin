@@ -15,7 +15,7 @@ server=1
 
 Then run the script like this:
 
-```
+```bash
 # Back up your wallet.dat to a Google Cloud Storage bucket.
 $ ./backup-bitcoin.sh -b gs://target-bucket/ -u gpg-recipient
 ```

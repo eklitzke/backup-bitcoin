@@ -15,11 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set -eu
+set -eux
 
 BUCKET=
 GPGRECIPIENT=
-BACKUPFILE=~/backup.dat
+BACKUPFILE=
+BACKUPNAME=wallet.dat.gpg
 
 usage() {
   echo "Usage: $0 -b BUCKET -u GPGRECIPIENT"
@@ -56,6 +57,10 @@ if [ -z "$GPGRECIPIENT" ]; then
   usage
 fi
 
+if [ -z "$BACKUPFILE" ]; then
+  BACKUPFILE=$(mktemp /tmp/wallet-XXXXXX.dat)
+fi
+
 GPGBACKUP="${BACKUPFILE}.gpg"
 
 # In normal operation this will be a no-op.
@@ -64,7 +69,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Create a backup file.
+# Create a backup file. Note that this file will have permissions 600, so it is
+# OK if it is in /tmp.
 bitcoin-cli backupwallet "$BACKUPFILE"
 
 # Encrypt the backup.
@@ -72,4 +78,4 @@ test -f "$GPGBACKUP" && rm -f "$GPGBACKUP"
 gpg -r "$GPGRECIPIENT" -e "$BACKUPFILE"
 
 # Move the backup to the cloud.
-gsutil -q mv "$GPGBACKUP" "$BUCKET"
+gsutil -q mv "$GPGBACKUP" "${BUCKET%/}"/"${BACKUPNAME}"

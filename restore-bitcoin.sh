@@ -51,7 +51,7 @@ fi
 GSLOCATION="${BUCKET%/}"/"${BACKUPNAME}"
 
 pushd "${DATADIR}" &>/dev/null
-gsutil -q\\\ cp "${GSLOCATION}" .
+gsutil -q cp "${GSLOCATION}" .
 gpg -d "${BACKUPNAME}" > wallet.dat
 chmod 600 wallet.dat
 rm -f "${BACKUPNAME}"

@@ -24,13 +24,14 @@ BACKUPFILE=
 BACKUPNAME=$(date '+%Y-%m-%d')-wallet.dat.xz.gpg
 KEEPLOCAL=0
 QUIET=0
+TXTDUMP=0
 
 usage() {
-  echo "Usage: $0 [-q] [-d DATADIR] -b BUCKET -u GPGRECIPIENT"
+  echo "Usage: $0 [-q] [-k] [-t] [-d DATADIR] -b BUCKET -u GPGRECIPIENT"
   exit
 }
 
-while getopts ":hqkb:d:u:f:x" opt; do
+while getopts ":hqktb:d:u:f:x" opt; do
   case $opt in
     h)
       usage
@@ -46,6 +47,13 @@ while getopts ":hqkb:d:u:f:x" opt; do
       ;;
     d)
       DATADIR="$OPTARG"
+      ;;
+    t)
+      # With -t, we dump the HD wallet in the text format. This is a more
+      # compact dump representation. However, it requires the wallet to be
+      # unlocked, so using this option is generally not advised.
+      TXTDUMP=1
+      BACKUPNAME=$(date '+%Y-%m-%d')-wallet.txt.xz.gpg
       ;;
     u)
       GPGRECIPIENT="$OPTARG"
@@ -73,7 +81,7 @@ if [ -z "$GPGRECIPIENT" ]; then
 fi
 
 if [ -z "$BACKUPFILE" ]; then
-  BACKUPFILE=$(mktemp ~/wallet-XXXXXX.dat)
+  BACKUPFILE=$(mktemp ~/wallet-XXXXXX)
 fi
 
 XZFILE="${BACKUPFILE}.xz"
@@ -88,8 +96,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# If a .cookie file exists, we use RPC to back up the wallet.
-if [ -r "${DATADIR}/.cookie" ]; then
+if [ "$TXTDUMP" -eq 1 ]; then
+  bitcoin-cli dumpwallet "$BACKUPFILE"
+elif [ -r "${DATADIR}/.cookie" ]; then
   bitcoin-cli backupwallet "$BACKUPFILE"
 else
   install -m 600 "${DATADIR}/wallet.dat" "$BACKUPFILE"

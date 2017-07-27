@@ -21,7 +21,8 @@ BUCKET=
 DATADIR="$HOME/.bitcoin/"
 GPGRECIPIENT=
 BACKUPFILE=
-BACKUPNAME=wallet.dat.gpg
+BACKUPNAME=$(date '+%Y-%m-%d')-wallet.dat.xz.gpg
+KEEPLOCAL=0
 QUIET=0
 
 usage() {
@@ -29,13 +30,16 @@ usage() {
   exit
 }
 
-while getopts ":hqb:d:u:f:" opt; do
+while getopts ":hqkb:d:u:f:x" opt; do
   case $opt in
     h)
       usage
       ;;
     q)
       QUIET=1
+      ;;
+    k)
+      KEEPLOCAL=1
       ;;
     b)
       BUCKET="$OPTARG"
@@ -48,6 +52,9 @@ while getopts ":hqb:d:u:f:" opt; do
       ;;
     f)
       BACKUPFILE="$OPTARG"
+      ;;
+    x)
+      set -x
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -66,17 +73,18 @@ if [ -z "$GPGRECIPIENT" ]; then
 fi
 
 if [ -z "$BACKUPFILE" ]; then
-  BACKUPFILE=$(mktemp /tmp/wallet-XXXXXX.dat)
+  BACKUPFILE=$(mktemp ~/wallet-XXXXXX.dat)
 fi
 
-GPGBACKUP="${BACKUPFILE}.gpg"
+XZFILE="${BACKUPFILE}.xz"
+GPGBACKUP="${XZFILE}.gpg"
 
 # Normalize the data directory name.
 DATADIR="${DATADIR%/}"
 
 # In normal operation this will be a no-op.
 cleanup() {
-  rm -f "$BACKUPFILE" "$GPGBACKUP"
+  rm -f "$BACKUPFILE" "$XZFILE" "$GPGBACKUP"
 }
 trap cleanup EXIT
 
@@ -87,9 +95,17 @@ else
   install -m 600 "${DATADIR}/wallet.dat" "$BACKUPFILE"
 fi
 
+# Compress the backup file.
+xz -9 "${BACKUPFILE}"
+
 # Encrypt the backup.
 test -f "$GPGBACKUP" && rm -f "$GPGBACKUP"
-gpg -r "$GPGRECIPIENT" -e "$BACKUPFILE"
+gpg -r "$GPGRECIPIENT" -e "$XZFILE"
+
+# Copy the file locally if ~/Private exists
+if [ "$KEEPLOCAL" -ne 0 ] && [ -d ~/Private ]; then
+  install -m 600 "$GPGBACKUP" ~/Private/"${BACKUPNAME}"
+fi
 
 GSLOCATION="${BUCKET%/}"/"${BACKUPNAME}"
 

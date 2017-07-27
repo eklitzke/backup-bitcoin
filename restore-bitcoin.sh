@@ -19,14 +19,14 @@ set -eu
 
 BUCKET=
 DATADIR="$HOME/.bitcoin/"
-BACKUPNAME=wallet.dat.gpg
+BACKUPNAME=wallet.dat.xz.gpg
 
 usage() {
   echo "Usage: $0 [-q] [-d DATADIR] -b BUCKET"
   exit
 }
 
-while getopts ":hb:d:" opt; do
+while getopts ":hxb:d:" opt; do
   case $opt in
     h)
       usage
@@ -36,6 +36,9 @@ while getopts ":hb:d:" opt; do
       ;;
     d)
       DATADIR="$OPTARG"
+      ;;
+    x)
+      set -x
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -48,11 +51,16 @@ if [ -z "$BUCKET" ]; then
   usage
 fi
 
-GSLOCATION="${BUCKET%/}"/"${BACKUPNAME}"
+GSLOCATION=$(gsutil ls "${BUCKET%/}"/*"${BACKUPNAME}")
 
-pushd "${DATADIR}" &>/dev/null
-gsutil -q cp "${GSLOCATION}" .
-gpg -d "${BACKUPNAME}" > wallet.dat
+cd "${DATADIR}"
+
+cleanup() {
+  rm -f ./wallet.dat.xz{,.gpg}
+}
+trap cleanup EXIT
+
+gsutil -q cp "${GSLOCATION}" "${BACKUPNAME}"
+gpg -d "${BACKUPNAME}" > wallet.dat.xz
+xz -fd wallet.dat.xz
 chmod 600 wallet.dat
-rm -f "${BACKUPNAME}"
-popd &>/dev/null

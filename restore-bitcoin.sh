@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set -eu
+set -u
 
 BUCKET=
 DATADIR="$HOME/.bitcoin/"
@@ -50,6 +50,13 @@ if [ -z "$BUCKET" ]; then
   echo "Missing -b option!"
   usage
 fi
+
+if fuser "${DATADIR}/wallet.dat"; then
+  echo "Cowardly refusing to restore wallet.dat when another process has it open"
+  exit 1
+fi
+
+set -e
 
 GSLOCATION=$(gsutil ls "${BUCKET%/}"/*"${BACKUPNAME}")
 
